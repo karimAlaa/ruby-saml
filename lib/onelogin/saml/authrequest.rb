@@ -19,7 +19,7 @@ module Onelogin::Saml
 			@request_params = Hash.new
 		end
 		
-		def create(params = {})
+		def create(params = {}, connect_to)
 			uuid = "_" + UUID.new.generate
 			time = Time.now.utc.strftime("%Y-%m-%dT%H:%M:%SZ")
 			# Create AuthnRequest root element using REXML 
@@ -75,7 +75,7 @@ module Onelogin::Saml
 
 			# Based on the IdP metadata, select the appropriate binding 
 			# and return the action to perform to the controller
-			meta = Metadata.new( @settings )
+			meta = Metadata.new( @settings, connect_to )
 			return meta.create_sso_request( @request, params )
 		end
 	
