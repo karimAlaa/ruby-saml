@@ -118,16 +118,16 @@ module Onelogin::Saml
 		def extract_certificate(meta_doc)
 			# pull out the x509 tag
 			x509  = REXML::XPath.first(meta_doc, 
-							"/EntityDescriptor/IDPSSODescriptor" +
-						"/KeyDescriptor[@use='signing']" +
-						"/ds:KeyInfo/ds:X509Data/ds:X509Certificate"
+							"//EntityDescriptor//IDPSSODescriptor" +
+						"//KeyDescriptor[@use='signing']" +
+						"//ds:KeyInfo//ds:X509Data//ds:X509Certificate"
 					)
 			# If the IdP didn't specify the use attribute
 			if x509.nil?
 				x509 = REXML::XPath.first(meta_doc, 
-							"/EntityDescriptor/IDPSSODescriptor" +
-						"/KeyDescriptor" +
-						"/ds:KeyInfo/ds:X509Data/ds:X509Certificate"
+							"//EntityDescriptor//IDPSSODescriptor" +
+						"//KeyDescriptor" +
+						"//ds:KeyInfo//ds:X509Data//ds:X509Certificate"
 					)
 			end
 			@settings.idp_cert = x509.text.gsub(/\n/, "")
@@ -192,7 +192,7 @@ module Onelogin::Saml
 			
 			# first try POST
 			sso_element = REXML::XPath.first(meta_doc,
-				"/EntityDescriptor/IDPSSODescriptor/#{service}[@Binding='#{HTTP_POST}']")
+				"//EntityDescriptor//IDPSSODescriptor//#{service}[@Binding='#{HTTP_POST}']")
 			if sso_element 
 				@URL = sso_element.attributes["Location"]
 				Logging.debug "binding_select: POST to #{@URL}"
@@ -201,7 +201,7 @@ module Onelogin::Saml
 			
 			# next try GET
 			sso_element = REXML::XPath.first(meta_doc,
-				"/EntityDescriptor/IDPSSODescriptor/#{service}[@Binding='#{HTTP_GET}']")
+				"//EntityDescriptor//IDPSSODescriptor//#{service}[@Binding='#{HTTP_GET}']")
 			if sso_element 
 				@URL = sso_element.attributes["Location"]
 				Logging.debug "binding_select: GET from #{@URL}"
