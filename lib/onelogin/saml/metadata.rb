@@ -20,7 +20,7 @@ module Onelogin::Saml
 		
 		attr_accessor :cache
 		
-		def initialize( settings )
+		def initialize( settings, connect_to )
 			# If we're running in Rails, use the RailsCache
 			if defined? Rails
 				@cache = RailsCache.new
