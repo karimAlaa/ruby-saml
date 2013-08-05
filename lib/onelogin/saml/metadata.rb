@@ -34,22 +34,28 @@ module Onelogin::Saml
 			@connect_to=connect_to
 		end
 
+	
 		
 		def generate
 			meta_doc = REXML::Document.new
 			root = meta_doc.add_element "md:EntityDescriptor", { 
-					"xmlns:md" => "urn:oasis:names:tc:SAML:2.0:metadata" 
+					"xmlns:md" => "urn:oasis:names:tc:SAML:2.0:metadata",
+					"xmlns:ds" => "http://www.w3.org/2000/09/xmldsig#"
 			}
 			sp_sso = root.add_element "md:SPSSODescriptor", { 
 					"protocolSupportEnumeration" => "urn:oasis:names:tc:SAML:2.0:protocol"
 			}
-			extensions = sp_sso.add_element "md:extensions"
+			extensions = sp_sso.add_element "md:Extensions"
 			uiinfo= extensions.add_element "mdui:UIInfo",{
 				"xmlns:mdui" => "urn:oasis:names:tc:SAML:metadata:ui"
 			}
-			
-			
-			
+			key_descriptor = sp_sso.add_element "md:KeyDescriptor"#, {
+				#"use" => "signing"
+			#}
+			key_info= key_descriptor.add_element "ds:KeyInfo"
+			x509_data= key_info.add_element "ds:X509Data"
+			organization= root.add_element "md:Organization"
+						
 			if @settings.issuer != nil
 				root.attributes["entityID"] = "https://#{@settings.issuer}"
 			end
@@ -101,6 +107,28 @@ module Onelogin::Saml
 					"width" => "100"
 				} 
 				logo.text= @settings.logo
+			end
+			if @settings.sp_cert != nil
+				x509_cert= x509_data.add_element "ds:X509Certificate"
+				x509_cert.text= @settings.sp_cert
+			end
+			if @settings.org_name != nil
+				org_name= organization.add_element "md:OrganizationName",{
+					"xml:lang" => "en"
+				}
+				org_name.text= @settings.org_name
+			end
+			if @settings.org_display_name != nil
+				org_display_name= organization.add_element "md:OrganizationDisplayName",{
+					"xml:lang" => "en"
+				}
+				org_display_name.text= @settings.org_display_name
+			end
+			if @settings.org_url != nil
+				org_url= organization.add_element "md:OrganizationURL", {
+					"xml:lang" => "en"
+				}
+				org_url.text= @settings.org_url
 			end
 			
 			
