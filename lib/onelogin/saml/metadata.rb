@@ -33,6 +33,8 @@ module Onelogin::Saml
 			end
 			@connect_to=connect_to
 		end
+
+		
 		def generate
 			meta_doc = REXML::Document.new
 			root = meta_doc.add_element "md:EntityDescriptor", { 
@@ -41,8 +43,15 @@ module Onelogin::Saml
 			sp_sso = root.add_element "md:SPSSODescriptor", { 
 					"protocolSupportEnumeration" => "urn:oasis:names:tc:SAML:2.0:protocol"
 			}
+			extensions = sp_sso.add_element "md:extensions"
+			uiinfo= extensions.add_element "mdui:UIInfo",{
+				"xmlns:mdui" => "urn:oasis:names:tc:SAML:metadata:ui"
+			}
+			
+			
+			
 			if @settings.issuer != nil
-				root.attributes["entityID"] = @settings.issuer
+				root.attributes["entityID"] = "https://#{@settings.issuer}"
 			end
 			if @settings.name_identifier_format != nil
 				name_id = sp_sso.add_element "md:NameIDFormat"
@@ -62,6 +71,39 @@ module Onelogin::Saml
 						"Location" => @settings.single_logout_service_url
 				}
 			end
+			if @settings.display_name != nil
+				display_name=uiinfo.add_element "mdui:DisplayName",{
+					"xml:lang" => "en"
+				} 
+				display_name.text= @settings.display_name
+			end
+			if @settings.description != nil
+				description=uiinfo.add_element "mdui:Description",{
+					"xml:lang" => "en"
+				} 
+				description.text= @settings.description
+			end
+			if @settings.information_url != nil
+				information_url=uiinfo.add_element "mdui:InformationURL",{
+					"xml:lang" => "en"
+				} 
+				information_url.text= @settings.information_url
+			end
+			if @settings.privacy_url != nil
+				privacy_url=uiinfo.add_element "mdui:PrivacyStatementURL",{
+					"xml:lang" => "en"
+				} 
+				privacy_url.text= @settings.privacy_url
+			end
+			if @settings.logo != nil
+				logo=uiinfo.add_element "mdui:Logo",{
+					"height" => "100",
+					"width" => "100"
+				} 
+				logo.text= @settings.logo
+			end
+			
+			
 			meta_doc << REXML::XMLDecl.new
 			ret = ""
 			# pretty print the XML so IdP administrators can easily see what the SP supports

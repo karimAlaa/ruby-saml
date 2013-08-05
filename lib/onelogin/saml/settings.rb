@@ -5,6 +5,8 @@ module Onelogin::Saml
 	 attr_accessor :authn_context, :idp_metadata, :idp_metadata_ttl
 	 attr_accessor :assertion_consumer_service_binding, :idp_slo_target_url
 	 attr_accessor :single_logout_service_url, :single_logout_service_binding
+	 attr_accessor :display_name, :description, :information_url, :privacy_url, :logo
+	 attr_accessor :sp_cert, :org_name, :org_display_name, :org_url
 	 alias :entity_id :issuer
 	 alias :acs_url :assertion_consumer_service_url
 	 alias :acs_binding :assertion_consumer_service_binding
