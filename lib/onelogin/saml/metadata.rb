@@ -57,7 +57,7 @@ module Onelogin::Saml
 			organization= root.add_element "md:Organization"
 						
 			if @settings.issuer != nil
-				root.attributes["entityID"] = "https://#{@settings.issuer}"
+				root.attributes["entityID"] = @settings.issuer
 			end
 			if @settings.name_identifier_format != nil
 				name_id = sp_sso.add_element "md:NameIDFormat"
