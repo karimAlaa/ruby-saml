@@ -84,10 +84,12 @@ module Onelogin::Saml
 				display_name.text= @settings.display_name
 			end
 			if @settings.description != nil
-				description=uiinfo.add_element "mdui:Description",{
-					"xml:lang" => "en"
-				} 
-				description.text= @settings.description
+				@settings.description.each do |k,v|
+					description=uiinfo.add_element "mdui:Description",{
+					"xml:lang" => k
+					} 
+					description.text= v
+				end
 			end
 			if @settings.information_url != nil
 				information_url=uiinfo.add_element "mdui:InformationURL",{
