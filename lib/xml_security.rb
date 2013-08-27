@@ -43,7 +43,7 @@ module XMLSecurity
       extract_signed_element_id
     end
 
-    def validate(settings, soft = true)
+    def validate(settings, soft = true, connect_to)
 		@settings = settings
 		x509_cert = REXML::XPath.first(self, "//ds:X509Certificate")
 		# What to do if the document doesn't have an X509 cert?  
@@ -58,7 +58,7 @@ module XMLSecurity
 		
 		# If we're using idp metadata, grab necessary info from it 
 		if @settings.idp_metadata != nil
-			metadata = Onelogin::Saml::Metadata.new(@settings)
+			metadata = Onelogin::Saml::Metadata.new(@settings, connect_to)
 			meta_doc = metadata.get_idp_metadata
 
 			# compare the certificate in response with the IdP's copy

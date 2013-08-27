@@ -96,7 +96,7 @@ module Onelogin::Saml
 		return true if options[:skip_validation]
 		
 		# document.validte populates the idp_cert
-      return false if document.validate(settings, soft) == false
+      return false if document.validate(settings, soft, connect) == false
 		
 		return true
     end

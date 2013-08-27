@@ -32,6 +32,7 @@ module Onelogin::Saml
 				@settings = settings
 			end
 			@connect_to=connect_to
+			puts "metadata and connect_to is #{connect_to}"
 		end
 
 	
