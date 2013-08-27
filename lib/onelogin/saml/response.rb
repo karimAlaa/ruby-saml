@@ -19,8 +19,8 @@ module Onelogin::Saml
 		Logging.debug "Decoded response:\n#{ document }"
     end
 
-    def is_valid?
-      validate(soft = true)
+    def is_valid?(connect)
+      validate(soft = true, connect)
     end
 
     def validate!
@@ -80,12 +80,12 @@ module Onelogin::Saml
       raise ValidationError.new(message)
     end
 
-    def validate(soft = true)
+    def validate(soft = true, connect)
 		
 		# prime the IdP metadata before the document validation. 
 		# The idp_cert needs to be populated before the validate_response_state method
 		if settings 
-			Onelogin::Saml::Metadata.new(settings).get_idp_metadata
+			Onelogin::Saml::Metadata.new(settings, connect).get_idp_metadata
 		end
 		
       return false if validate_response_state(soft) == false
