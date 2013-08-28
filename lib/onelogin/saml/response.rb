@@ -38,6 +38,7 @@ module Onelogin::Saml
 
     # A hash of alle the attributes with the response. Assuming there is only one value for each key
     def attributes
+      #need to decrypt first!
       @attr_statements ||= begin
         result = {}
 

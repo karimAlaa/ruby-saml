@@ -55,14 +55,18 @@ module XMLSecurity
 		end
 		
 		base64_cert = x509_cert.text.gsub(/\n/, "")
+		puts "base64_cert in xml_security is #{base64_cert}"
 		
 		# If we're using idp metadata, grab necessary info from it 
 		if @settings.idp_metadata != nil
 			metadata = Onelogin::Saml::Metadata.new(@settings, connect_to)
 			meta_doc = metadata.get_idp_metadata
+    
+    puts "metadata cert is #{@settings.idp_cert}"
 
 			# compare the certificate in response with the IdP's copy
 			if @settings.idp_cert != base64_cert 
+			  puts "They are not equal"
 				return soft ? false : (raise Onelogin::Saml::ValidationError.new("Response certificate does not match the IdP's certificate in metadata"))
 			end
 		# If we're using the old fingerprint method 
@@ -109,6 +113,9 @@ module XMLSecurity
         hash                          = Base64.encode64(Digest::SHA1.digest(canon_hashed_element)).chomp
         digest_value                  = REXML::XPath.first(ref, "//ds:DigestValue", {"ds"=>"http://www.w3.org/2000/09/xmldsig#"}).text
 			
+			  puts "Hash iss #{hash}"
+        puts "digest value is #{digest_value}"
+        			
         unless digests_match?(hash, digest_value)
           return soft ? false : (raise Onelogin::Saml::ValidationError.new("Digest mismatch"))
         end
@@ -118,15 +125,19 @@ module XMLSecurity
       canoner                 = XML::Util::XmlCanonicalizer.new(false, true)
       signed_info_element     = REXML::XPath.first(sig_element, "//ds:SignedInfo", {"ds"=>"http://www.w3.org/2000/09/xmldsig#"})
       canon_string            = canoner.canonicalize(signed_info_element)
+      puts "canon_string is #{canon_string}"
 
       base64_signature        = REXML::XPath.first(sig_element, "//ds:SignatureValue", {"ds"=>"http://www.w3.org/2000/09/xmldsig#"}).text
       signature               = Base64.decode64(base64_signature)
-
+      puts "signature is #{signature}"
+      
       # get certificate object
       cert_text               = Base64.decode64(base64_cert)
       cert                    = OpenSSL::X509::Certificate.new(cert_text)
-
+      puts "cert is #{cert}"
+      
       if !cert.public_key.verify(OpenSSL::Digest::SHA1.new, signature, canon_string)
+        puts "key validation error"
         return soft ? false : (raise ValidationError.new("Key validation error"))
       end
 
