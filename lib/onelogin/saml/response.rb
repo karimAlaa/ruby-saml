@@ -1,5 +1,8 @@
 require "xml_security"
 require "time"
+#require "openssl"
+#require "digest"
+#require "Base64"
 
 module Onelogin::Saml
 
@@ -8,7 +11,7 @@ module Onelogin::Saml
     PROTOCOL  = "urn:oasis:names:tc:SAML:2.0:protocol"
     DSIG      = "http://www.w3.org/2000/09/xmldsig#"
 
-    attr_accessor :options, :response, :document, :settings
+    attr_accessor :options, :response, :document, :settings, :decrypted_data
 
     def initialize(response, options = {})
       raise ArgumentError.new("Response cannot be nil") if response.nil?
@@ -20,6 +23,38 @@ module Onelogin::Saml
 	  puts "response in gem is #{response}"
 	  
     end
+	
+	def decrypt(pk)
+		if !REXML::XPath.first(document, "//xenc:EncryptedData").nil?
+		#data is encrypted
+
+		
+		private_key=pk
+		encrypted_data = REXML::XPath.first(document, "//xenc:EncryptedData")
+		key_info = REXML::XPath.first(encrypted_data, "//ds:KeyInfo")   
+		encrypted_key = REXML::XPath.first(key_info, "//xenc:EncryptedKey")
+		key_cipher = REXML::XPath.first(encrypted_key, "//xenc:CipherData/xenc:CipherValue")
+		key = decrypt_key(key_cipher.text, private_key)
+		
+		cipher_data = REXML::XPath.first(document, "//xenc:EncryptedData/xenc:CipherData/xenc:CipherValue")
+		decrypted=decrypt_cipher_data(key, cipher_data.text)
+		stop=-1;
+		(decrypted.length-1).downto(0).each do |i|
+			if decrypted[i]==">"
+				stop=i;
+			end
+		end
+		decrypted=decrypted[0..stop]
+		decrypted_data= XMLSecurity::SignedDocument.new(decrypted)
+		#now replace encrypted with decrypted
+		#enc=REXML::XPath.first(document, "//saml2:EncryptedAssertion")
+		#document.root.delete(enc)
+		puts "Decrypted is #{document.to_s}"
+	else
+		decrypted_data=nil
+	end
+	
+	end
 
     def is_valid?(connect)
       validate(soft = true, connect)
@@ -31,36 +66,66 @@ module Onelogin::Saml
 
     # The value of the user identifier as designated by the initialization request response
     def name_id
-      @name_id ||= begin
-        node = REXML::XPath.first(document, "/p:Response/a:Assertion[@ID='#{document.signed_element_id[1,document.signed_element_id.size]}']/a:Subject/a:NameID", { "p" => PROTOCOL, "a" => ASSERTION })
-        node ||=  REXML::XPath.first(document, "/p:Response[@ID='#{document.signed_element_id[1,document.signed_element_id.size]}']/a:Assertion/a:Subject/a:NameID", { "p" => PROTOCOL, "a" => ASSERTION })
-        node.nil? ? nil : node.text
-      end
+		if decrypted_data.nil?
+			@name_id ||= begin
+				node = REXML::XPath.first(document, "/p:Response/a:Assertion[@ID='#{document.signed_element_id[1,document.signed_element_id.size]}']/a:Subject/a:NameID", { "p" => PROTOCOL, "a" => ASSERTION })
+				node ||=  REXML::XPath.first(document, "/p:Response[@ID='#{document.signed_element_id[1,document.signed_element_id.size]}']/a:Assertion/a:Subject/a:NameID", { "p" => PROTOCOL, "a" => ASSERTION })
+				node.nil? ? nil : node.text
+			end
+		else
+			@name_id ||= begin
+				node = REXML::XPath.first(decrypted_data, "//a:Assertion/a:Subject/a:NameID", { "a" => ASSERTION })
+				node.nil? ? nil : node.text
+			end
+		end
     end
 
     # A hash of alle the attributes with the response. Assuming there is only one value for each key
     def attributes
       #need to decrypt first!
-      @attr_statements ||= begin
-        result = {}
+	  if decrypted_data.nil?
+		@attr_statements ||= begin
+			result = {}
 
-        stmt_element = REXML::XPath.first(document, "/p:Response/a:Assertion/a:AttributeStatement", { "p" => PROTOCOL, "a" => ASSERTION })
-        return {} if stmt_element.nil?
+			stmt_element = REXML::XPath.first(document, "/p:Response/a:Assertion/a:AttributeStatement", { "p" => PROTOCOL, "a" => ASSERTION })
+			return {} if stmt_element.nil?
 
-        stmt_element.elements.each do |attr_element|
-          name  = attr_element.attributes["Name"]
-          value = attr_element.elements.first.text
+			stmt_element.elements.each do |attr_element|
+				name  = attr_element.attributes["Name"]
+				friendly_name= attr_element.attributes["FriendlyName"]
+				value = attr_element.elements.first.text
 
-          result[name] = value
-        end
+				result[name] = [friendly_name,value]
+			end
 
-        result.keys.each do |key|
-          result[key.intern] = result[key]
-        end
+			result.keys.each do |key|
+				result[key.intern] = result[key]
+			end
 
-        result
-      end
-    end
+			result
+		  end	
+		else
+		 @attr_statements ||= begin
+			result = {}
+
+			stmt_element = REXML::XPath.first(decrypted_data, "//a:Assertion/a:AttributeStatement", {"a" => ASSERTION })
+			return {} if stmt_element.nil?
+
+			stmt_element.elements.each do |attr_element|
+				name  = attr_element.attributes["Name"]
+				friendly_name= attr_element.attributes["FriendlyName"]
+				value = attr_element.elements.first.text
+
+				result[name] = [friendly_name,value]
+			end
+
+			result.keys.each do |key|
+				result[key.intern] = result[key]
+			end
+
+			result
+		end	
+	end
 
     # When this user session should expire at latest
     def session_expires_at
@@ -82,6 +147,28 @@ module Onelogin::Saml
     def validation_error(message)
       raise ValidationError.new(message)
     end
+
+	def decrypt_key(key_wrap_cipher, private_key, ssl_padding=OpenSSL::PKey::RSA::PKCS1_OAEP_PADDING)
+      # TODO: Encrypted method is assumed t obe rsa-oaep-mgf1p 
+      from_key = OpenSSL::PKey::RSA.new(private_key)
+      key_wrap_str = Base64.decode64(key_wrap_cipher)
+      from_key.private_decrypt(key_wrap_str, ssl_padding)        
+	end
+
+	def decrypt_cipher_data(key_cipher, cipher_data)
+      cipher_data_str = Base64.decode64(cipher_data)      
+      mcrypt_iv = cipher_data_str[0..15]
+	  cipher_data_str = cipher_data_str[16..-1]
+      # TODO: Encryption method algorithm is assumed to be aes256-cbc.
+      cipher = OpenSSL::Cipher::Cipher.new("aes-128-cbc")
+      cipher.decrypt
+      cipher.key = key_cipher
+      cipher.iv = mcrypt_iv  
+	  cipher.padding = 0
+      result = cipher.update(cipher_data_str)
+#      puts cipher.final
+	  result << cipher.final
+	end
 
     def validate(soft = true, connect)
 		
