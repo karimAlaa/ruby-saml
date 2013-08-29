@@ -44,7 +44,9 @@ module Onelogin::Saml
 		(decrypted.length-1).downto(0).each do |i|
 			if decrypted[i]==">"
 				stop=i;
+				break;
 			end
+			break if stop!=-1
 		end
 		decrypted=decrypted[0..stop]
 		puts "Decrypted string issss #{decrypted}"
