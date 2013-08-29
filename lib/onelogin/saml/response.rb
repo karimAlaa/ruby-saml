@@ -36,6 +36,7 @@ module Onelogin::Saml
 		key_cipher = REXML::XPath.first(encrypted_key, "//xenc:CipherData/xenc:CipherValue")
 		key = decrypt_key(key_cipher.text, private_key)
 		
+		
 		cipher_data = REXML::XPath.first(document, "//xenc:EncryptedData/xenc:CipherData/xenc:CipherValue")
 		decrypted=decrypt_cipher_data(key, cipher_data.text)
 		stop=-1;
@@ -45,6 +46,7 @@ module Onelogin::Saml
 			end
 		end
 		decrypted=decrypted[0..stop]
+		puts "Decrypted string issss #{decrypted}"
 		decrypted_data= XMLSecurity::SignedDocument.new(decrypted)
 		#now replace encrypted with decrypted
 		#enc=REXML::XPath.first(document, "//saml2:EncryptedAssertion")
