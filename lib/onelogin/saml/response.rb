@@ -126,7 +126,7 @@ module Onelogin::Saml
 			result
 		end	
 	end
-
+	end
     # When this user session should expire at latest
     def session_expires_at
       @expires_at ||= begin
