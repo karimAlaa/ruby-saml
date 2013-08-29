@@ -50,11 +50,12 @@ module Onelogin::Saml
 		end
 		decrypted=decrypted[0..stop]
 		puts "Decrypted string issss #{decrypted}"
-		decrypted_data= XMLSecurity::SignedDocument.new(decrypted)
+		#decrypted_data= XMLSecurity::SignedDocument.new(decrypted)
+		self.decrypted_data= XMLSecurity::SignedDocument.new(decrypted)
 		#now replace encrypted with decrypted
 		#enc=REXML::XPath.first(document, "//saml2:EncryptedAssertion")
 		#document.root.delete(enc)
-		puts "Decrypted is #{document.to_s}"
+		#puts "Decrypted is #{document.to_s}"
 	else
 		decrypted_data=nil
 	end
@@ -71,6 +72,8 @@ module Onelogin::Saml
 
     # The value of the user identifier as designated by the initialization request response
     def name_id
+		puts "decrypted data is #{decrypted_data}"
+		puts "decrypted data is #{self.decrypted_data.inspect}"
 		if decrypted_data.nil?
 			@name_id ||= begin
 				node = REXML::XPath.first(document, "/p:Response/a:Assertion[@ID='#{document.signed_element_id[1,document.signed_element_id.size]}']/a:Subject/a:NameID", { "p" => PROTOCOL, "a" => ASSERTION })
@@ -88,6 +91,8 @@ module Onelogin::Saml
     # A hash of alle the attributes with the response. Assuming there is only one value for each key
     def attributes
       #need to decrypt first!
+	puts "decrypted data is #{decrypted_data}"
+	puts "decrypted data is #{self.decrypted_data.inspect}"
 	  if decrypted_data.nil?
 		@attr_statements ||= begin
 			result = {}
@@ -114,6 +119,7 @@ module Onelogin::Saml
 			result = {}
 
 			stmt_element = REXML::XPath.first(decrypted_data, "//a:Assertion/a:AttributeStatement", {"a" => ASSERTION })
+			puts "stmt element is #{stmt_element.inspect}"
 			return {} if stmt_element.nil?
 
 			stmt_element.elements.each do |attr_element|
