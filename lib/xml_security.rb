@@ -65,7 +65,7 @@ module XMLSecurity
     puts "metadata cert is #{@settings.idp_cert}"
 
 			# compare the certificate in response with the IdP's copy
-			if @settings.idp_cert != base64_cert 
+			if @settings.idp_cert.strip != base64_cert.strip
 			  puts "They are not equal"
 				return soft ? false : (raise Onelogin::Saml::ValidationError.new("Response certificate does not match the IdP's certificate in metadata"))
 			end

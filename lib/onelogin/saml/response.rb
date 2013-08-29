@@ -17,6 +17,8 @@ module Onelogin::Saml
       self.response = response
       self.document = XMLSecurity::SignedDocument.new(Base64.decode64(response))
 		Logging.debug "Decoded response:\n#{ document }"
+	  puts "response in gem is #{response}"
+	  
     end
 
     def is_valid?(connect)
