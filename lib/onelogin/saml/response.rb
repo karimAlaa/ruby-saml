@@ -40,13 +40,29 @@ module Onelogin::Saml
 		cipher_data = REXML::XPath.first(document, "//xenc:EncryptedData/xenc:CipherData/xenc:CipherValue")
 		decrypted=decrypt_cipher_data(key, cipher_data.text)
 		puts "decrypted before adjusting is #{decrypted}"
-		stop=-1;
+		stop=-1
+		count=0
+		breaking=false
+
 		(decrypted.length-1).downto(0).each do |i|
 			if decrypted[i]==">"
-				stop=i;
-				break;
+				count+=1
+				stop=i
+				if count==2
+					breaking=true
+					break
+				end
+
+				#break
 			end
-			break if stop!=-1
+			if decrypted[i]=="<"
+				if count==1
+					breaking=true
+					break
+				end
+				#end
+			end
+			break if breaking
 		end
 		decrypted=decrypted[0..stop]
 		puts "Decrypted string issss #{decrypted}"
