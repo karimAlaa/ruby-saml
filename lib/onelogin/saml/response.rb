@@ -38,6 +38,8 @@ module Onelogin::Saml
 		
 		
 		cipher_data = REXML::XPath.first(document, "//xenc:EncryptedData/xenc:CipherData/xenc:CipherValue")
+		puts "key is #{key}"
+		puts "before decrypting is #{cipher_data.text}"
 		decrypted=decrypt_cipher_data(key, cipher_data.text)
 		puts "decrypted before adjusting is #{decrypted}"
 		stop=-1
