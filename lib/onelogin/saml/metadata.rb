@@ -276,6 +276,10 @@ module Onelogin::Saml
 			# first try POST
 			sso_element = REXML::XPath.first(meta_doc,
 				"//EntityDescriptor[@entityID='#{@connect_to}']//IDPSSODescriptor//#{service}[@Binding='#{HTTP_POST}']")
+			if sso_element.nil?
+				sso_element = REXML::XPath.first(meta_doc,
+				"//md:EntityDescriptor[@entityID='#{@connect_to}']//IDPSSODescriptor//#{service}[@Binding='#{HTTP_POST}']")
+			end
 			if sso_element 
 				@URL = sso_element.attributes["Location"]
 				Logging.debug "binding_select: POST to #{@URL}"
@@ -285,6 +289,10 @@ module Onelogin::Saml
 			# next try GET
 			sso_element = REXML::XPath.first(meta_doc,
 				"//EntityDescriptor[@entityID='#{@connect_to}']//IDPSSODescriptor//#{service}[@Binding='#{HTTP_GET}']")
+			if sso_element.nil?
+				sso_element = REXML::XPath.first(meta_doc,
+				"//md:EntityDescriptor[@entityID='#{@connect_to}']//IDPSSODescriptor//#{service}[@Binding='#{HTTP_GET}']")
+			end
 			if sso_element 
 				@URL = sso_element.attributes["Location"]
 				Logging.debug "binding_select: GET from #{@URL}"
