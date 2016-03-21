@@ -204,6 +204,15 @@ module Onelogin::Saml
 						"//ds:KeyInfo//ds:X509Data//ds:X509Certificate"
 					)
 			end
+			
+			if x509.nil?
+				x509 = REXML::XPath.first(meta_doc, 
+							"//md:EntityDescriptor[@entityID='#{@connect_to}']//IDPSSODescriptor" +
+						"//KeyDescriptor" +
+						"//ds:KeyInfo//ds:X509Data//ds:X509Certificate"
+					)
+			end
+			
 			@settings.idp_cert = x509.text.gsub(/\n/, "")
 		end
 		
