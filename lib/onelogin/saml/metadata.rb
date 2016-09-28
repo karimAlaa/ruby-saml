@@ -5,7 +5,7 @@ require "uri"
 require "digest/md5"
 
 # Class to return SP metadata based on the settings requested.
-# Return this XML in a controller, then give that URL to the the 
+# Return this XML in a controller, then give that URL to the the
 # IdP administrator.  The IdP will poll the URL and your settings
 # will be updated automatically
 # Also contains functions to pull IdP metadata, and select
@@ -17,9 +17,9 @@ module Onelogin::Saml
 	  # a few symbols for SAML class names
 		HTTP_POST = "urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST"
 		HTTP_GET = "urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect"
-		
+
 		attr_accessor :cache
-		
+
 		def initialize( settings, connect_to )
 			# If we're running in Rails, use the RailsCache
 			if defined? Rails
@@ -35,15 +35,15 @@ module Onelogin::Saml
 			puts "metadata and connect_to is #{connect_to}"
 		end
 
-	
-		
+
+
 		def generate
 			meta_doc = REXML::Document.new
-			root = meta_doc.add_element "md:EntityDescriptor", { 
+			root = meta_doc.add_element "md:EntityDescriptor", {
 					"xmlns:md" => "urn:oasis:names:tc:SAML:2.0:metadata",
 					"xmlns:ds" => "http://www.w3.org/2000/09/xmldsig#"
 			}
-			sp_sso = root.add_element "md:SPSSODescriptor", { 
+			sp_sso = root.add_element "md:SPSSODescriptor", {
 					"protocolSupportEnumeration" => "urn:oasis:names:tc:SAML:2.0:protocol"
 			}
 			extensions = sp_sso.add_element "md:Extensions"
@@ -56,7 +56,7 @@ module Onelogin::Saml
 			key_info= key_descriptor.add_element "ds:KeyInfo"
 			x509_data= key_info.add_element "ds:X509Data"
 			organization= root.add_element "md:Organization"
-						
+
 			if @settings.issuer != nil
 				root.attributes["entityID"] = @settings.issuer
 			end
@@ -81,34 +81,34 @@ module Onelogin::Saml
 			if @settings.display_name != nil
 				display_name=uiinfo.add_element "mdui:DisplayName",{
 					"xml:lang" => "en"
-				} 
+				}
 				display_name.text= @settings.display_name
 			end
 			if @settings.description != nil
 				@settings.description.each do |k,v|
 					description=uiinfo.add_element "mdui:Description",{
 					"xml:lang" => k
-					} 
+					}
 					description.text= v
 				end
 			end
 			if @settings.information_url != nil
 				information_url=uiinfo.add_element "mdui:InformationURL",{
 					"xml:lang" => "en"
-				} 
+				}
 				information_url.text= @settings.information_url
 			end
 			if @settings.privacy_url != nil
 				privacy_url=uiinfo.add_element "mdui:PrivacyStatementURL",{
 					"xml:lang" => "en"
-				} 
+				}
 				privacy_url.text= @settings.privacy_url
 			end
 			if @settings.logo != nil
 				logo=uiinfo.add_element "mdui:Logo",{
 					"height" => "100",
 					"width" => "100"
-				} 
+				}
 				logo.text= @settings.logo
 			end
 			if @settings.sp_cert != nil
@@ -133,24 +133,37 @@ module Onelogin::Saml
 				}
 				org_url.text= @settings.org_url
 			end
-			
-			
+
+			if @settings.edugain
+				edugain_category= root.add_element "mdattr:EntityAttributes" , {
+					"xmlns:mdattr" => "urn:oasis:names:tc:SAML:metadata:attribute"
+				}
+				edugain_attribute = edugain_category.add_element "saml:Attribute", {
+          "xmlns:saml" => "urn:oasis:names:tc:SAML:2.0:assertion",
+          "NameFormat" => "urn:oasis:names:tc:SAML:2.0:attrname-format:uri",
+          "Name" => "http://macedir.org/entity-category"
+        }
+       	value = edugain_attribute.add_element "saml:AttributeValue"
+        value.text = "http://refeds.org/category/research-and-scholarship"
+			end
+
+
 			meta_doc << REXML::XMLDecl.new
 			ret = ""
 			# pretty print the XML so IdP administrators can easily see what the SP supports
 			meta_doc.write(ret, 1)
-			
+
 			Logging.debug "Generated metadata:\n#{ret}"
-			
+
 			return ret
-			
+
 		end
-		# Retrieve the remote IdP metadata from the URL or a cached copy 
+		# Retrieve the remote IdP metadata from the URL or a cached copy
 		# returns a REXML document of the metadata
 		def get_idp_metadata
-		
+
 			return false if @settings.idp_metadata.nil?
-		
+
 			# Look up the metdata in cache first
 			id = Digest::MD5.hexdigest(@settings.idp_metadata)
 			lookup = @cache.read(id)
@@ -160,7 +173,7 @@ module Onelogin::Saml
 				extract_certificate( doc )
 				return doc
 			end
-			
+
 			Logging.debug "IdP metadata cache miss on #{@settings.idp_metadata}"
 			# cache miss
 			if File.exists?(@settings.idp_metadata)
@@ -188,91 +201,91 @@ module Onelogin::Saml
 			extract_certificate(doc)
 			return doc
 		end
-		
+
 		def extract_certificate(meta_doc)
 			# pull out the x509 tag
-			x509  = REXML::XPath.first(meta_doc, 
+			x509  = REXML::XPath.first(meta_doc,
 							"//EntityDescriptor[@entityID='#{@connect_to}']//IDPSSODescriptor" +
 						"//KeyDescriptor[@use='signing']" +
 						"//ds:KeyInfo//ds:X509Data//ds:X509Certificate"
 					)
 			# If the IdP didn't specify the use attribute
 			if x509.nil?
-				x509 = REXML::XPath.first(meta_doc, 
+				x509 = REXML::XPath.first(meta_doc,
 							"//EntityDescriptor[@entityID='#{@connect_to}']//IDPSSODescriptor" +
 						"//KeyDescriptor" +
 						"//ds:KeyInfo//ds:X509Data//ds:X509Certificate"
 					)
 			end
-			
+
 			if x509.nil?
-				x509 = REXML::XPath.first(meta_doc, 
+				x509 = REXML::XPath.first(meta_doc,
 							"//md:EntityDescriptor[@entityID='#{@connect_to}']//IDPSSODescriptor" +
 						"//KeyDescriptor" +
 						"//ds:KeyInfo//ds:X509Data//ds:X509Certificate"
 					)
 			end
-			
+
 			@settings.idp_cert = x509.text.gsub(/\n/, "")
 		end
-		
+
 		def create_sso_request(message, extra_parameters = {} )
-			build_message( :type => "SAMLRequest", 
-					:service => "SingleSignOnService", 
+			build_message( :type => "SAMLRequest",
+					:service => "SingleSignOnService",
 					:message => message, :extra_parameters => extra_parameters)
 		end
 		def create_sso_response(message, extra_parameters = {} )
-			build_message( :type => "SAMLResponse", 
-					:service => "SingleSignOnService", 
-					:message => message, :extra_parameters => extra_parameters)			
+			build_message( :type => "SAMLResponse",
+					:service => "SingleSignOnService",
+					:message => message, :extra_parameters => extra_parameters)
 		end
 		def create_slo_request(message, extra_parameters = {} )
-			build_message( :type => "SAMLRequest", 
-					:service => "SingleLogoutService", 
+			build_message( :type => "SAMLRequest",
+					:service => "SingleLogoutService",
 					:message => message, :extra_parameters => extra_parameters)
 		end
 		def create_slo_response(message, extra_parameters = {} )
-			build_message( :type => "SAMLResponse", 
-					:service => "SingleLogoutService", 
-					:message => message, :extra_parameters => extra_parameters)			
+			build_message( :type => "SAMLResponse",
+					:service => "SingleLogoutService",
+					:message => message, :extra_parameters => extra_parameters)
 		end
 
-		# Construct a SAML message using information in the IdP metadata.  
-		# :type can be either "SAMLRequest" or "SAMLResponse" 
-		# :service refers to the Binding method, 
+		# Construct a SAML message using information in the IdP metadata.
+		# :type can be either "SAMLRequest" or "SAMLResponse"
+		# :service refers to the Binding method,
 		#    either "SingleLogoutService" or "SingleSignOnService"
-		# :message is the SAML message itself (XML)  
-		# I've provided easy to use wrapper functions above 
+		# :message is the SAML message itself (XML)
+		# I've provided easy to use wrapper functions above
 		def build_message( options = {} )
 			opt = { :type => nil, :service => nil, :message => nil, :extra_parameters => nil }.merge(options)
 			action, url = binding_select( opt[:service] )
-			case action 
+			case action
 			when "GET"
 				return action, message_get( opt[:type], url, opt[:message], opt[:extra_parameters] )
 			when "POST"
 				return action, message_post( options[:type], url, opt[:message], opt[:extra_parameters] )
 			end
 		end
-		
+
 		# get the IdP metadata, and select the appropriate SSO binding
 		# that we can support.  Currently this is HTTP-Redirect and HTTP-POST
 		# but more could be added in the future
 		def binding_select(service)
-			# first check if we're still using the old hard coded method for 
+			# first check if we're still using the old hard coded method for
 			# backwards compatability
-			if service == "SingleSignOnService" && 
+			if service == "SingleSignOnService" &&
 				@settings.idp_metadata == nil && @settings.idp_sso_target_url != nil
 					return "GET", @settings.idp_sso_target_url
 			end
-			if service == "SingleLogoutService" && 
+			if service == "SingleLogoutService" &&
 				@settings.idp_metadata == nil	&& @settings.idp_slo_target_url != nil
 					return "GET", @settings.idp_slo_target_url
 			end
-			
+
 			meta_doc = get_idp_metadata
-			
+
 			return nil unless meta_doc
-			
+
 			# first try POST
 			sso_element = REXML::XPath.first(meta_doc,
 				"//EntityDescriptor[@entityID='#{@connect_to}']//IDPSSODescriptor//#{service}[@Binding='#{HTTP_POST}']")
@@ -280,12 +293,12 @@ module Onelogin::Saml
 				sso_element = REXML::XPath.first(meta_doc,
 				"//md:EntityDescriptor[@entityID='#{@connect_to}']//IDPSSODescriptor//#{service}[@Binding='#{HTTP_POST}']")
 			end
-			if sso_element 
+			if sso_element
 				@URL = sso_element.attributes["Location"]
 				Logging.debug "binding_select: POST to #{@URL}"
 				return "POST", @URL
 			end
-			
+
 			# next try GET
 			sso_element = REXML::XPath.first(meta_doc,
 				"//EntityDescriptor[@entityID='#{@connect_to}']//IDPSSODescriptor//#{service}[@Binding='#{HTTP_GET}']")
@@ -293,7 +306,7 @@ module Onelogin::Saml
 				sso_element = REXML::XPath.first(meta_doc,
 				"//md:EntityDescriptor[@entityID='#{@connect_to}']//IDPSSODescriptor//#{service}[@Binding='#{HTTP_GET}']")
 			end
-			if sso_element 
+			if sso_element
 				@URL = sso_element.attributes["Location"]
 				Logging.debug "binding_select: GET from #{@URL}"
 				return "GET", @URL
@@ -308,9 +321,9 @@ module Onelogin::Saml
 			end
 			# compress GET requests to try and stay under that 8KB request limit
 			params[type] = encode( deflate( message ) )
-			
+
 			Logging.debug "#{type}=#{params[type]}"
-			
+
 			uri = Addressable::URI.parse(url)
 			if uri.query_values == nil
 				uri.query_values = params
@@ -329,11 +342,11 @@ module Onelogin::Saml
 			if extra_parameters
 				params.merge!(extra_parameters)
 			end
-			
+
 			# POST requests seem to bomb out when they're deflated
 			# and they probably don't need to be compressed anyway
 			params[type] = encode(message)
-			
+
 			#Logging.debug "SAMLRequest=#{@request_params["SAMLRequest"]}"
 			# kind of a cheesy method of building an HTML, form since we can't rely on Rails too much,
 			# and REXML doesn't work well with quote characters
@@ -346,11 +359,11 @@ module Onelogin::Saml
 				#str += "<input name=\"#{key}\" value=\"#{CGI.escape(value)}\" type='hidden' />\n"
 			end
 			str += "</form></body></html>\n"
-			
+
 			Logging.debug "Created form:\n#{str}"
 			return str
 		end
-		
+
 	end
 end
 
