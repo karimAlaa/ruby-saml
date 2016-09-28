@@ -6,18 +6,18 @@ module Onelogin::Saml
 	 attr_accessor :assertion_consumer_service_binding, :idp_slo_target_url
 	 attr_accessor :single_logout_service_url, :single_logout_service_binding
 	 attr_accessor :display_name, :description, :information_url, :privacy_url, :logo
-	 attr_accessor :sp_cert, :org_name, :org_display_name, :org_url
+	 attr_accessor :sp_cert, :org_name, :org_display_name, :org_url, :edugain
 	 alias :entity_id :issuer
 	 alias :acs_url :assertion_consumer_service_url
 	 alias :acs_binding :assertion_consumer_service_binding
 	 alias :slo_url :single_logout_service_url
 	 alias :slo_binding :single_logout_service_binding
-	 
-		def initialize 
+
+		def initialize
 			# Set some sane default values on a few options
 			self.assertion_consumer_service_binding = "urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST"
 			self.single_logout_service_binding = "urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST"
-			# SAML spec snobs seem to think that transient is the default Name ID that 
+			# SAML spec snobs seem to think that transient is the default Name ID that
 			# *everyone* should support.  A good enough default that should cover most installations
 			self.name_identifier_format = "urn:oasis:names:tc:SAML:2.0:nameid-format:transient"
 			# Default cache TTL for metdata is 1 day
@@ -41,9 +41,9 @@ module Onelogin::Saml
 			end
 			return true
 		end
-		
+
 		def validation_error(message)
 			raise ValidationError.new(message)
 		end
-  end  
+  end
 end
