@@ -137,13 +137,13 @@ module Onelogin::Saml
 			if @settings.contact != nil
 				contact = root.add_element "ContactPerson", {
 					"xmlns" => "urn:oasis:names:tc:SAML:2.0:metadata",
-					"contactType" => @settings.contact.type
+					"contactType" => @settings.contact[:type]
 				}
 				company = contact.add_element "Company"
-				company.text = @settings.contact.company
+				company.text = @settings.contact[:company]
 
 				email = contact.add_element "EmailAddress"
-				email.text = @settings.contact.email
+				email.text = @settings.contact[:email]
 			end
 
 			if @settings.edugain != nil
