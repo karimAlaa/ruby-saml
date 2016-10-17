@@ -134,7 +134,19 @@ module Onelogin::Saml
 				org_url.text= @settings.org_url
 			end
 
-			if @settings.edugain
+			if @settings.contact != nil
+				contact = root.add_element "ContactPerson", {
+					"xmlns" => "urn:oasis:names:tc:SAML:2.0:metadata",
+					"contactType" => @settings.contact.type
+				}
+				company = contact.add_element "Company"
+				company.text = @settings.contact.company
+
+				email = contact.add_element "EmailAddress"
+				email.text = @settings.contact.email
+			end
+
+			if @settings.edugain != nil
 				edugain_category= root.add_element "mdattr:EntityAttributes" , {
 					"xmlns:mdattr" => "urn:oasis:names:tc:SAML:metadata:attribute"
 				}
