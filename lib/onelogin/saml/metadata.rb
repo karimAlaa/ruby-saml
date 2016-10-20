@@ -159,6 +159,31 @@ module Onelogin::Saml
         value.text = "http://refeds.org/category/research-and-scholarship"
 			end
 
+			if @settings.requested_attributes != nil
+				consuming_service = sp_sso.add_element "md:AttributeConsumingService"
+				service_name = consuming_service.add_element "md:ServiceName",{
+					"xml:lang" => "en"
+				}
+				service_name.text= @settings.org_display_name
+				@settings.description.each do |k,v|
+					description= consuming_service.add_element "md:ServiceDescription",{
+				  	"xml:lang" => k
+					}
+					description.text= v
+				end
+
+
+				@settings.requested_attributes.each do |att|
+					consuming_service.add_element "md:RequestedAttribute",{
+				  	"NameFormat" => "urn:oasis:names:tc:SAML:2.0:attrname-format:uri",
+				  	"isRequired" => att[:required]
+				  	"Name" => att[:name]
+					}
+				end
+
+
+			end
+
 
 			meta_doc << REXML::XMLDecl.new
 			ret = ""
