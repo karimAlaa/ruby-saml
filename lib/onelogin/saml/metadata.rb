@@ -172,12 +172,11 @@ module Onelogin::Saml
 					description.text= v
 				end
 
-
 				@settings.requested_attributes.each do |att|
 					consuming_service.add_element "md:RequestedAttribute",{
 				  	"NameFormat" => "urn:oasis:names:tc:SAML:2.0:attrname-format:uri",
 				  	"isRequired" => att[:required]
-				  	"Name" => att[:name]
+				  	"Name" => "urn:oid:#{att[:name]}"
 					}
 				end
 
