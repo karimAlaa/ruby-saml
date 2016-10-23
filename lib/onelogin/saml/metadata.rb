@@ -139,7 +139,7 @@ module Onelogin::Saml
 				@settings.contact.each do |con|
 					contact = root.add_element "md:ContactPerson", {
 						"xmlns" => "urn:oasis:names:tc:SAML:2.0:metadata",
-						"contactType" => @settings.contact[:type]
+						"contactType" => con[:type]
 					}
 					company = contact.add_element "Company"
 					company.text = con[:company]
