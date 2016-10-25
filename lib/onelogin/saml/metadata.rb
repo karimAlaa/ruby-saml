@@ -265,6 +265,14 @@ module Onelogin::Saml
 					)
 			end
 
+			if x509.nil?
+				x509 = REXML::XPath.first(meta_doc,
+							"//md:EntityDescriptor[@entityID='#{@connect_to}']//md:IDPSSODescriptor" +
+						"//md:KeyDescriptor" +
+						"//ds:KeyInfo//ds:X509Data//ds:X509Certificate"
+					)
+			end
+
 			@settings.idp_cert = x509.text.gsub(/\n/, "")
 		end
 
@@ -332,6 +340,12 @@ module Onelogin::Saml
 				sso_element = REXML::XPath.first(meta_doc,
 				"//md:EntityDescriptor[@entityID='#{@connect_to}']//IDPSSODescriptor//#{service}[@Binding='#{HTTP_POST}']")
 			end
+
+			if sso_element.nil?
+				sso_element = REXML::XPath.first(meta_doc,
+				"//md:EntityDescriptor[@entityID='#{@connect_to}']//md:IDPSSODescriptor//md:#{service}[@Binding='#{HTTP_POST}']")
+			end
+
 			if sso_element
 				@URL = sso_element.attributes["Location"]
 				Logging.debug "binding_select: POST to #{@URL}"
@@ -345,6 +359,12 @@ module Onelogin::Saml
 				sso_element = REXML::XPath.first(meta_doc,
 				"//md:EntityDescriptor[@entityID='#{@connect_to}']//IDPSSODescriptor//#{service}[@Binding='#{HTTP_GET}']")
 			end
+
+			if sso_element.nil?
+				sso_element = REXML::XPath.first(meta_doc,
+				"//md:EntityDescriptor[@entityID='#{@connect_to}']//md:IDPSSODescriptor//md:#{service}[@Binding='#{HTTP_GET}']")
+			end
+
 			if sso_element
 				@URL = sso_element.attributes["Location"]
 				Logging.debug "binding_select: GET from #{@URL}"
