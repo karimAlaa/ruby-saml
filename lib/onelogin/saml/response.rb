@@ -30,7 +30,7 @@ module Onelogin::Saml
 
 		private_key=pk
 		encrypted_data = REXML::XPath.first(document, "//xenc:EncryptedData")
-		key_info = REXML::XPath.first(encrypted_data, "//ds:KeyInfo")
+		key_info = REXML::XPath.first(encrypted_data, "//ds:KeyInfo|//KeyInfo")
 		encrypted_key = REXML::XPath.first(key_info, "//xenc:EncryptedKey")
 		key_cipher = REXML::XPath.first(encrypted_key, "//xenc:CipherData/xenc:CipherValue")
 		key = decrypt_key(key_cipher.text, private_key)
