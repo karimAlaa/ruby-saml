@@ -30,14 +30,16 @@ module Onelogin::Saml
 
 		private_key=pk
 		encrypted_data = REXML::XPath.first(document, "//xenc:EncryptedData")
+		encryption_method = REXML::XPath.first(encrypted_data, "//xenc:EncryptionMethod")
 		key_info = REXML::XPath.first(encrypted_data, "//ds:KeyInfo|//KeyInfo")
 		encrypted_key = REXML::XPath.first(key_info, "//xenc:EncryptedKey")
 		key_cipher = REXML::XPath.first(encrypted_key, "//xenc:CipherData/xenc:CipherValue")
 		key = decrypt_key(key_cipher.text, private_key)
 
+		encryption_algorithm = encryption_method.attributes["Algorithm"].split("#")[1] rescue nil
 
 		cipher_data = REXML::XPath.first(document, "//xenc:EncryptedData/xenc:CipherData/xenc:CipherValue")
-		decrypted=decrypt_cipher_data(key, cipher_data.text)
+		decrypted=decrypt_cipher_data(key, cipher_data.text, encryption_algorithm)
 		stop=-1
 		count=0
 		breaking=false
@@ -168,12 +170,16 @@ module Onelogin::Saml
       from_key.private_decrypt(key_wrap_str, ssl_padding)
 	end
 
-	def decrypt_cipher_data(key_cipher, cipher_data)
+	def decrypt_cipher_data(key_cipher, cipher_data, algorithm_type)
       cipher_data_str = Base64.decode64(cipher_data)
       mcrypt_iv = cipher_data_str[0..15]
-	  cipher_data_str = cipher_data_str[16..-1]
+	  	cipher_data_str = cipher_data_str[16..-1]
       # TODO: Encryption method algorithm is assumed to be aes256-cbc.
-      cipher = OpenSSL::Cipher::Cipher.new("aes-128-cbc")
+      algorithm = "aes-128-cbc"
+			if !algorithm_type.nil? && algorithm_type.include?("256")
+			   algorithm = "aes-256-cbc"
+			end
+      cipher = OpenSSL::Cipher::Cipher.new(algorithm)
       cipher.decrypt
       cipher.key = key_cipher
       cipher.iv = mcrypt_iv
